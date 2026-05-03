@@ -3,6 +3,9 @@ const multer = require("multer");
 const ffmpeg = require("fluent-ffmpeg");
 
 const app = express();
+app.get("/", (req, res) => {
+  res.send("API is working 🚀");
+});
 const upload = multer({ dest: "uploads/" });
 
 app.post("/clip", upload.single("video"), (req, res) => {
