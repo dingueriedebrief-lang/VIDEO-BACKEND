@@ -1,6 +1,17 @@
 const express = require("express");
 const multer = require("multer");
-const ffmpeg = require("fluent-ffmpeg");
+const express = require("express");
+
+const app = express();
+
+// route test
+app.get("/", (req, res) => {
+  res.send("API is working 🚀");
+});
+
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server running");
+});
 
 const app = express();
 app.get("/", (req, res) => {
