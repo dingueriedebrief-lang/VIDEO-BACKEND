@@ -3,7 +3,7 @@ const cors = require("cors");
 const multer = require("multer");
 
 const app = express();
-
+app.use(express.json());
 // 🔥 IMPORTANT
 app.use(cors());
 
@@ -23,3 +23,21 @@ app.post("/upload", upload.single("video"), (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("Server running"));
+// =====================
+// 🎥 ANALYSE YOUTUBE
+// =====================
+app.post("/analyze", (req, res) => {
+  const { url } = req.body;
+
+  console.log("URL reçue :", url);
+
+  if (!url) {
+    return res.status(400).json({ error: "Aucun lien fourni" });
+  }
+
+  // Pour l'instant on simule
+  res.json({
+    message: "Analyse OK 🚀",
+    url: url
+  });
+});
