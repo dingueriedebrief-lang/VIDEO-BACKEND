@@ -39,7 +39,7 @@ app.post("/upload", upload.single("video"), (req, res) => {
 // 🎥 ANALYSE YOUTUBE
 // =====================
 app.post("/analyze", (req, res) => {
-  const { url } = req.body;
+  const { url } = req.body; // 🔥 IMPORTANT
 
   console.log("URL reçue :", url);
 
@@ -47,7 +47,6 @@ app.post("/analyze", (req, res) => {
     return res.status(400).json({ error: "Aucun lien fourni" });
   }
 
-  // Simulation pour l'instant
   res.json({
     message: "Analyse OK 🚀",
     url: url,
