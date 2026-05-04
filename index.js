@@ -38,8 +38,10 @@ app.post("/upload", upload.single("video"), (req, res) => {
 // =====================
 // 🎥 ANALYSE YOUTUBE
 // =====================
-app.post("/analyze", (req, res) => {
-  const { url } = req.body; // 🔥 IMPORTANT
+const ytdl = require("ytdl-core");
+
+app.post("/analyze", async (req, res) => {
+  const { url } = req.body;
 
   console.log("URL reçue :", url);
 
@@ -47,18 +49,20 @@ app.post("/analyze", (req, res) => {
     return res.status(400).json({ error: "Aucun lien fourni" });
   }
 
-  res.json({
-    message: "Analyse OK 🚀",
-    url: url,
-    title: "Vidéo test",
-    duration: "10:00"
-  });
-});
+  try {
+    const info = await ytdl.getInfo(url);
 
-// =====================
-// 🚀 START SERVER
-// =====================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+    const title = info.videoDetails.title;
+    const duration = info.videoDetails.lengthSeconds;
+
+    res.json({
+      message: "Analyse réelle OK 🚀",
+      title,
+      duration
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur analyse vidéo" });
+  }
 });

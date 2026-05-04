@@ -1,24 +1,18 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Video App</title>
 </head>
-
 <body>
 
-  <!-- 🔴 PARTIE YOUTUBE -->
   <h2>Importer une vidéo YouTube 🎥</h2>
 
-  <input type="text" id="youtubeUrl" placeholder="Colle le lien YouTube ici">
-<button onclick="analyzeYoutube()">Analyser</button>
-
-  <p id="ytStatus"></p>
+  <input type="text" id="youtubeLink" placeholder="Colle le lien YouTube ici" />
+  <button onclick="analyzeVideo()">Analyser</button>
 
   <hr>
 
-  <!-- 🟢 PARTIE UPLOAD CLASSIQUE -->
   <h2>Uploader une vidéo 🎥</h2>
 
   <input type="file" id="videoInput" />
@@ -27,86 +21,65 @@
 
   <p id="status"></p>
 
-  <hr>
-
-  <!-- 🎬 LISTE DES VIDÉOS -->
-  <h3>Vidéos uploadées 🎬</h3>
-  <div id="videoList"></div>
-
   <script>
-const API_URL = "https://video-backend-production-07ad.up.railway.app";
+    // 🎯 ANALYSE YOUTUBE
+    async function analyzeVideo() {
+      const input = document.getElementById("youtubeLink").value;
 
-// =====================
-// 🎬 UPLOAD VIDÉO
-// =====================
-async function uploadVideo() {
-  console.log("CLICK OK");
+      console.log("Analyse du lien :", input);
 
-  const fileInput = document.getElementById("videoInput");
-  const status = document.getElementById("status");
+      try {
+        const res = await fetch("https://video-backend-production-07ad.up.railway.app/analyze", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ url: input })
+        });
 
-  if (!fileInput.files.length) {
-    status.innerText = "❌ Choisis une vidéo";
-    return;
-  }
+        const data = await res.json();
 
-  const file = fileInput.files[0];
-  const formData = new FormData();
-  formData.append("video", file);
+        console.log("Réponse :", data);
 
-  status.innerText = "⏳ Envoi en cours...";
+        alert(data.message);
 
-  try {
-    const res = await fetch(`${API_URL}/upload`, {
-      method: "POST",
-      body: formData
-    });
+      } catch (err) {
+        console.error(err);
+        alert("Erreur analyse");
+      }
+    }
 
-    const text = await res.text();
+    // 🎥 UPLOAD VIDEO
+    async function uploadVideo() {
+      const fileInput = document.getElementById("videoInput");
+      const status = document.getElementById("status");
 
-    console.log("STATUS:", res.status);
-    console.log("REPONSE:", text);
+      const file = fileInput.files[0];
 
-    status.innerText = "✅ Succès : Upload réussi 🎉";
+      if (!file) {
+        status.innerText = "❌ Choisis un fichier";
+        return;
+      }
 
-  } catch (err) {
-    console.error(err);
-    status.innerText = "❌ Erreur : " + err.message;
-  }
-}
+      const formData = new FormData();
+      formData.append("video", file);
 
-// =====================
-// 🎥 ANALYSE YOUTUBE
-// =====================
-async function analyzeYoutube() {
-  const input = document.getElementById("youtubeUrl");
-  const url = input.value;
+      try {
+        const res = await fetch("https://video-backend-production-07ad.up.railway.app/upload", {
+          method: "POST",
+          body: formData
+        });
 
-  if (!url) {
-    alert("❌ Colle un lien YouTube");
-    return;
-  }
+        const text = await res.text();
 
-  console.log("Analyse du lien :", url);
+        status.innerText = "✅ " + text;
 
-  try {
-    const res = await fetch(`${API_URL}/analyze`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ url })
-    });
+      } catch (err) {
+        console.error(err);
+        status.innerText = "❌ Erreur upload";
+      }
+    }
+  </script>
 
-    const data = await res.json();
-
-    console.log("Réponse backend :", data);
-
-    alert("✅ Vidéo analysée ! (regarde la console)");
-
-  } catch (err) {
-    console.error(err);
-    alert("❌ Erreur analyse");
-  }
-}
-</script>
+</body>
+</html>
