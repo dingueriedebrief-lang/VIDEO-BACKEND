@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
-
+const ytdl = require("ytdl-core");
 const app = express();
 
 // 🔥 CORS AVANT TOUT
@@ -36,25 +36,34 @@ app.post("/upload", upload.single("video"), (req, res) => {
 // =====================
 // 🎥 ANALYSE YOUTUBE
 // =====================
-app.post("/analyze", (req, res) => {
-  const { url } = req.body;
+app.post("/analyze", async (req, res) => {
+  try {
+    const { url } = req.body;
 
-  console.log("URL reçue :", url);
+    console.log("URL reçue :", url);
 
-  if (!url) {
-    return res.status(400).json({ error: "Aucun lien fourni" });
+    if (!url) {
+      return res.status(400).json({ error: "Aucun lien fourni" });
+    }
+
+    if (!ytdl.validateURL(url)) {
+      return res.status(400).json({ error: "Lien YouTube invalide" });
+    }
+
+    const info = await ytdl.getInfo(url);
+
+    const title = info.videoDetails.title;
+    const duration = info.videoDetails.lengthSeconds;
+
+    res.json({
+      message: "Analyse réelle OK 🚀",
+      url,
+      title,
+      duration
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erreur serveur" });
   }
-
-  res.json({
-    message: "Analyse réelle OK 🚀",
-    url: url,
-    title: "Vidéo test",
-    duration: "10:00"
-  });
 });
-
-// =====================
-// 🚀 START SERVER
-// =====================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server running 🚀"));
