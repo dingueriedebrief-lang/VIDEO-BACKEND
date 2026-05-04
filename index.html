@@ -15,35 +15,39 @@
     <p id="status"></p>
 
     <script>
-        async function uploadVideo() {
-            const fileInput = document.getElementById("videoInput");
-            const status = document.getElementById("status");
+async function uploadVideo() {
+    console.log("CLICK OK");
 
-            if (!fileInput.files.length) {
-                status.innerText = "❌ Choisis une vidéo";
-                return;
-            }
+    const fileInput = document.getElementById("videoInput");
+    const status = document.getElementById("status");
 
-            const file = fileInput.files[0];
-            const formData = new FormData();
-            formData.append("video", file);
+    if (!fileInput.files.length) {
+        status.innerText = "❌ Choisis une vidéo";
+        return;
+    }
 
-            status.innerText = "⏳ Envoi en cours...";
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append("video", file);
 
-            try {
-                const response = await fetch("https://video-backend-production-07ad.up.railway.app/upload", {
-                    method: "POST",
-                    body: formData
-                });
+    status.innerText = "⏳ Envoi en cours...";
 
-                const data = await response.text();
-                status.innerText = "✅ Succès : " + data;
+    try {
+        const response = await fetch("https://video-backend-production-07ad.up.railway.app/upload", {
+            method: "POST",
+            body: formData
+        });
 
-            } catch (error) {
-                status.innerText = "❌ Erreur : " + error;
-            }
-        }
-    </script>
+        console.log("STATUS:", response.status);
 
-</body>
-</html>
+        const data = await response.text();
+        console.log("REPONSE:", data);
+
+        status.innerText = "✅ Succès : " + data;
+
+    } catch (error) {
+        console.error("ERREUR:", error);
+        status.innerText = "❌ Erreur : " + error.message;
+    }
+}
+</script>
