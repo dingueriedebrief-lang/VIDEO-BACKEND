@@ -7,7 +7,7 @@ const app = express();
 // 🔥 CORS AVANT TOUT
 app.use(cors({
   origin: "*",
-  methods: ["GET", "POST", "OPTIONS"],
+  methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"]
 }));
 
