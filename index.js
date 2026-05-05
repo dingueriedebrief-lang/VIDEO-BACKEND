@@ -159,9 +159,9 @@ app.post("/thumbnail-youtube", async (req, res) => {
     const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 
     res.json({
-      message: "Thumbnail YouTube",
-      thumbnail
-    });
+  message: "Thumbnail généré",
+  thumbnail: `${req.protocol}://${req.get("host")}/thumbnails/${req.file.filename}.jpg`
+});
 
   } catch (err) {
     console.error(err);
