@@ -14,10 +14,22 @@ const app = express();
 // =====================
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-// ✅ FFmpeg (Linux compatible - Render)
-const ffmpegPath = require("ffmpeg-static");
+// 🔥 FORCE FFmpeg Linux (solution ultime Render)
+let ffmpegPath;
 
-// 🔥 DEBUG GLOBAL (au démarrage)
+try {
+  ffmpegPath = require("ffmpeg-static");
+} catch (e) {
+  console.error("❌ ffmpeg-static introuvable !");
+}
+
+// 🔥 SÉCURITÉ : empêcher tout chemin Windows
+if (!ffmpegPath || ffmpegPath.includes("C:\\")) {
+  console.log("⚠️ Mauvais ffmpeg détecté, fallback Linux...");
+  ffmpegPath = "/usr/bin/ffmpeg";
+}
+
+// 🔥 DEBUG
 console.log("🚀 FFmpeg utilisé :", ffmpegPath);
 
 app.use(cors({
@@ -31,7 +43,7 @@ app.use(express.json());
 // servir frontend
 app.use(express.static(__dirname));
 
-// 🔥 créer dossier thumbnails si inexistant (IMPORTANT sur Render)
+// 🔥 créer dossier thumbnails si inexistant
 const thumbnailsDir = path.join(__dirname, "thumbnails");
 if (!fs.existsSync(thumbnailsDir)) {
   fs.mkdirSync(thumbnailsDir);
@@ -51,64 +63,6 @@ app.get("/", (req, res) => {
 });
 
 // =====================
-// ANALYSE YOUTUBE
-// =====================
-app.post("/analyze", async (req, res) => {
-  const { url } = req.body;
-
-  if (!url) {
-    return res.status(400).json({ error: "URL manquante" });
-  }
-
-  try {
-    let videoId;
-
-    if (url.includes("youtu.be")) {
-      videoId = url.split("youtu.be/")[1];
-    } else if (url.includes("v=")) {
-      videoId = url.split("v=")[1];
-    }
-
-    if (!videoId) {
-      return res.status(400).json({ error: "ID vidéo introuvable" });
-    }
-
-    videoId = videoId.split("&")[0];
-
-    const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${YOUTUBE_API_KEY}`
-    );
-
-    const data = await response.json();
-
-    if (!data.items || data.items.length === 0) {
-      return res.status(404).json({ error: "Vidéo non trouvée" });
-    }
-
-    const video = data.items[0];
-
-    const title = video.snippet.title;
-    const isoDuration = video.contentDetails.duration;
-
-    function convertDuration(iso) {
-      const match = iso.match(/PT(\d+M)?(\d+S)?/);
-      const minutes = (match[1] || "0M").replace("M", "");
-      const seconds = (match[2] || "0S").replace("S", "");
-      return `${minutes.padStart(2, "0")}:${seconds.padStart(2, "0")}`;
-    }
-
-    const duration = convertDuration(isoDuration);
-    const thumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-
-    res.json({ title, duration, thumbnail });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur analyse" });
-  }
-});
-
-// =====================
 // THUMBNAIL UPLOAD VIDEO
 // =====================
 app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
@@ -125,9 +79,7 @@ app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
   if (time > 59) time = 59;
 
   console.log("⏱️ Temps reçu:", time);
-
-  // 🔥 DEBUG IMPORTANT ICI
-  console.log("🎬 FFmpeg utilisé pour cette requête :", ffmpegPath);
+  console.log("🎬 FFmpeg utilisé :", ffmpegPath);
 
   execFile(ffmpegPath, [
     "-i", inputPath,
@@ -158,45 +110,14 @@ app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
 });
 
 // =====================
-// THUMBNAIL YOUTUBE
-// =====================
-app.post("/thumbnail-youtube", async (req, res) => {
-  const { url } = req.body;
-
-  if (!url) {
-    return res.status(400).json({ error: "URL manquante" });
-  }
-
-  try {
-    let videoId;
-
-    if (url.includes("youtu.be")) {
-      videoId = url.split("youtu.be/")[1];
-    } else {
-      videoId = url.split("v=")[1];
-    }
-
-    videoId = videoId.split("&")[0];
-
-    const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-
-    res.json({
-      message: "Thumbnail YouTube récupéré",
-      thumbnail
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur YouTube thumbnail" });
-  }
-});
-
-// =====================
 // TEST FFMPEG
 // =====================
 app.get("/test-ffmpeg", (req, res) => {
   execFile(ffmpegPath, ["-version"], (error, stdout) => {
-    if (error) return res.send("FFmpeg erreur ❌");
+    if (error) {
+      console.error(error);
+      return res.send("FFmpeg erreur ❌");
+    }
     res.send(`<pre>${stdout}</pre>`);
   });
 });
