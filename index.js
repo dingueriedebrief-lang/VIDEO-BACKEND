@@ -14,23 +14,11 @@ const app = express();
 // =====================
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-// 🔥 FORCE FFmpeg Linux (solution ultime Render)
-let ffmpegPath;
+// ✅ FFmpeg (SOLUTION PROPRE ET UNIQUE)
+const ffmpegPath = require("ffmpeg-static");
 
-try {
-  ffmpegPath = require("ffmpeg-static");
-} catch (e) {
-  console.error("❌ ffmpeg-static introuvable !");
-}
-
-// 🔥 SÉCURITÉ : empêcher tout chemin Windows
-if (!ffmpegPath || ffmpegPath.includes("C:\\")) {
-  console.log("⚠️ Mauvais ffmpeg détecté, fallback Linux...");
-  ffmpegPath = "/usr/bin/ffmpeg";
-}
-
-// 🔥 DEBUG
-console.log("🚀 FFmpeg utilisé :", ffmpegPath);
+// 🔥 DEBUG (IMPORTANT)
+console.log("🔥 FFmpeg utilisé :", ffmpegPath);
 
 app.use(cors({
   origin: "*",
@@ -43,7 +31,7 @@ app.use(express.json());
 // servir frontend
 app.use(express.static(__dirname));
 
-// 🔥 créer dossier thumbnails si inexistant
+// créer dossier thumbnails si inexistant
 const thumbnailsDir = path.join(__dirname, "thumbnails");
 if (!fs.existsSync(thumbnailsDir)) {
   fs.mkdirSync(thumbnailsDir);
