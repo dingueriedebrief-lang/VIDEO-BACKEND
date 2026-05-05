@@ -3,8 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
-const ffmpeg = require("fluent-ffmpeg");
-const ffmpegInstaller = require("@ffmpeg-installer/ffmpeg");
+const { execFile } = require("child_process");
 const path = require("path");
 
 const app = express();
@@ -14,8 +13,8 @@ const app = express();
 // =====================
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-// 🔥 CONFIG FFMPEG (compatible Render + Windows)
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+// ✅ FFmpeg (compatible Render Linux)
+const ffmpegPath = require("ffmpeg-static");
 
 app.use(cors({
   origin: "*",
@@ -110,27 +109,32 @@ app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
 
   const inputPath = req.file.path;
   const outputPath = path.join(__dirname, "thumbnails", `${req.file.filename}.jpg`);
-  const time = req.body.time || "1";
+
+  // ✅ sécurisation du temps
+  let time = parseInt(req.body.time) || 1;
+  if (time < 1) time = 1;
+  if (time > 59) time = 59;
 
   console.log("Temps reçu:", time);
 
-  ffmpeg(inputPath)
-    .setStartTime(time)
-    .frames(1)
-    .output(outputPath)
-    .on("end", () => {
-      const baseUrl = `${req.protocol}://${req.get("host")}`;
+  execFile(ffmpegPath, [
+    "-i", inputPath,
+    "-ss", `00:00:${String(time).padStart(2, "0")}`,
+    "-vframes", "1",
+    outputPath
+  ], (err) => {
+    if (err) {
+      console.error("Erreur FFmpeg:", err);
+      return res.status(500).json({ error: "Erreur génération thumbnail" });
+    }
 
-      res.json({
-        message: "Thumbnail généré",
-        thumbnail: `${baseUrl}/thumbnails/${req.file.filename}.jpg`
-      });
-    })
-    .on("error", (err) => {
-      console.error("FFMPEG ERROR:", err);
-      res.status(500).send("Erreur thumbnail");
-    })
-    .run();
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+    res.json({
+      message: "Thumbnail généré",
+      thumbnail: `${baseUrl}/thumbnails/${req.file.filename}.jpg`
+    });
+  });
 });
 
 // =====================
@@ -157,7 +161,7 @@ app.post("/thumbnail-youtube", async (req, res) => {
     const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 
     res.json({
-      message: "Thumbnail YouTube",
+      message: "Thumbnail YouTube récupéré",
       thumbnail
     });
 
@@ -171,11 +175,10 @@ app.post("/thumbnail-youtube", async (req, res) => {
 // TEST FFMPEG
 // =====================
 app.get("/test-ffmpeg", (req, res) => {
-  ffmpeg()
-    .on("start", () => {})
-    .on("error", () => res.send("FFmpeg erreur ❌"))
-    .on("end", () => res.send("FFmpeg OK ✅"))
-    .save("/dev/null");
+  execFile(ffmpegPath, ["-version"], (error, stdout) => {
+    if (error) return res.send("FFmpeg erreur ❌");
+    res.send(`<pre>${stdout}</pre>`);
+  });
 });
 
 // =====================
