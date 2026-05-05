@@ -14,11 +14,11 @@ const app = express();
 // =====================
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-// ✅ FFmpeg (SOLUTION PROPRE ET UNIQUE)
-const ffmpegPath = require("ffmpeg-static");
+// 🔥 FFmpeg Linux (Render FIX FINAL)
+const ffmpegPath = "/usr/bin/ffmpeg";
 
-// 🔥 DEBUG (IMPORTANT)
-console.log("🔥 FFmpeg utilisé :", ffmpegPath);
+// 🔥 DEBUG
+console.log("🚀 FFmpeg utilisé :", ffmpegPath);
 
 app.use(cors({
   origin: "*",
@@ -101,9 +101,10 @@ app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
 // TEST FFMPEG
 // =====================
 app.get("/test-ffmpeg", (req, res) => {
-  execFile(ffmpegPath, ["-version"], (error, stdout) => {
+  execFile(ffmpegPath, ["-version"], (error, stdout, stderr) => {
     if (error) {
-      console.error(error);
+      console.error("❌ Test FFmpeg erreur :", error);
+      console.error(stderr);
       return res.send("FFmpeg erreur ❌");
     }
     res.send(`<pre>${stdout}</pre>`);
