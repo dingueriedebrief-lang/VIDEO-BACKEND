@@ -3,7 +3,8 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
-const { execFile } = require("child_process");
+const ffmpeg = require("fluent-ffmpeg");
+const ffmpegInstaller = require("@ffmpeg-installer/ffmpeg");
 const path = require("path");
 
 const app = express();
@@ -12,6 +13,9 @@ const app = express();
 // CONFIG
 // =====================
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+
+// 🔥 CONFIG FFMPEG (compatible Render + Windows)
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 app.use(cors({
   origin: "*",
@@ -29,9 +33,6 @@ app.use("/thumbnails", express.static(path.join(__dirname, "thumbnails")));
 
 // upload config
 const upload = multer({ dest: "uploads/" });
-
-// 🔥 IMPORTANT: Render utilise Linux → ffmpeg doit être installé côté serveur
-const ffmpegPath = require("ffmpeg-static");
 
 // =====================
 // TEST API
@@ -109,30 +110,27 @@ app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
 
   const inputPath = req.file.path;
   const outputPath = path.join(__dirname, "thumbnails", `${req.file.filename}.jpg`);
-
   const time = req.body.time || "1";
 
   console.log("Temps reçu:", time);
 
-  execFile(ffmpegPath, [
-    "-i", inputPath,
-    "-ss", `00:00:${time.padStart(2, "0")}`,
-    "-vframes", "1",
-    outputPath
-  ], (err) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send("Erreur thumbnail");
-    }
+  ffmpeg(inputPath)
+    .setStartTime(time)
+    .frames(1)
+    .output(outputPath)
+    .on("end", () => {
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
 
-    // 🔥 IMPORTANT : URL dynamique (Render)
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-
-    res.json({
-      message: "Thumbnail généré",
-      thumbnail: `${baseUrl}/thumbnails/${req.file.filename}.jpg`
-    });
-  });
+      res.json({
+        message: "Thumbnail généré",
+        thumbnail: `${baseUrl}/thumbnails/${req.file.filename}.jpg`
+      });
+    })
+    .on("error", (err) => {
+      console.error("FFMPEG ERROR:", err);
+      res.status(500).send("Erreur thumbnail");
+    })
+    .run();
 });
 
 // =====================
@@ -159,9 +157,9 @@ app.post("/thumbnail-youtube", async (req, res) => {
     const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 
     res.json({
-  message: "Thumbnail généré",
-  thumbnail: `${req.protocol}://${req.get("host")}/thumbnails/${req.file.filename}.jpg`
-});
+      message: "Thumbnail YouTube",
+      thumbnail
+    });
 
   } catch (err) {
     console.error(err);
@@ -173,10 +171,11 @@ app.post("/thumbnail-youtube", async (req, res) => {
 // TEST FFMPEG
 // =====================
 app.get("/test-ffmpeg", (req, res) => {
-  execFile(ffmpegPath, ["-version"], (error, stdout) => {
-    if (error) return res.send("FFmpeg erreur ❌");
-    res.send(`<pre>${stdout}</pre>`);
-  });
+  ffmpeg()
+    .on("start", () => {})
+    .on("error", () => res.send("FFmpeg erreur ❌"))
+    .on("end", () => res.send("FFmpeg OK ✅"))
+    .save("/dev/null");
 });
 
 // =====================
