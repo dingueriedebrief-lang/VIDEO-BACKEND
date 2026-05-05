@@ -13,8 +13,10 @@ const app = express();
 // =====================
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-// ✅ FFmpeg (compatible Render Linux)
+// ✅ FFmpeg (Linux compatible - Render)
 const ffmpegPath = require("ffmpeg-static");
+
+console.log("FFmpeg utilisé :", ffmpegPath); // 🔥 DEBUG IMPORTANT
 
 app.use(cors({
   origin: "*",
@@ -110,7 +112,6 @@ app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
   const inputPath = req.file.path;
   const outputPath = path.join(__dirname, "thumbnails", `${req.file.filename}.jpg`);
 
-  // ✅ sécurisation du temps
   let time = parseInt(req.body.time) || 1;
   if (time < 1) time = 1;
   if (time > 59) time = 59;
@@ -121,11 +122,18 @@ app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
     "-i", inputPath,
     "-ss", `00:00:${String(time).padStart(2, "0")}`,
     "-vframes", "1",
+    "-y", // overwrite
     outputPath
-  ], (err) => {
+  ], (err, stdout, stderr) => {
+
     if (err) {
-      console.error("Erreur FFmpeg:", err);
-      return res.status(500).json({ error: "Erreur génération thumbnail" });
+      console.error("❌ ERREUR FFMPEG:");
+      console.error(err);
+      console.error(stderr);
+      return res.status(500).json({
+        error: "Erreur génération thumbnail",
+        details: stderr
+      });
     }
 
     const baseUrl = `${req.protocol}://${req.get("host")}`;
