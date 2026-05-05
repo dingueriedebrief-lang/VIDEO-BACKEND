@@ -5,6 +5,7 @@ const cors = require("cors");
 const multer = require("multer");
 const { execFile } = require("child_process");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
 
@@ -16,7 +17,8 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 // ✅ FFmpeg (Linux compatible - Render)
 const ffmpegPath = require("ffmpeg-static");
 
-console.log("FFmpeg utilisé :", ffmpegPath); // 🔥 DEBUG IMPORTANT
+// 🔥 DEBUG GLOBAL (au démarrage)
+console.log("🚀 FFmpeg utilisé :", ffmpegPath);
 
 app.use(cors({
   origin: "*",
@@ -29,8 +31,14 @@ app.use(express.json());
 // servir frontend
 app.use(express.static(__dirname));
 
+// 🔥 créer dossier thumbnails si inexistant (IMPORTANT sur Render)
+const thumbnailsDir = path.join(__dirname, "thumbnails");
+if (!fs.existsSync(thumbnailsDir)) {
+  fs.mkdirSync(thumbnailsDir);
+}
+
 // servir thumbnails
-app.use("/thumbnails", express.static(path.join(__dirname, "thumbnails")));
+app.use("/thumbnails", express.static(thumbnailsDir));
 
 // upload config
 const upload = multer({ dest: "uploads/" });
@@ -110,19 +118,22 @@ app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
   }
 
   const inputPath = req.file.path;
-  const outputPath = path.join(__dirname, "thumbnails", `${req.file.filename}.jpg`);
+  const outputPath = path.join(thumbnailsDir, `${req.file.filename}.jpg`);
 
   let time = parseInt(req.body.time) || 1;
   if (time < 1) time = 1;
   if (time > 59) time = 59;
 
-  console.log("Temps reçu:", time);
+  console.log("⏱️ Temps reçu:", time);
+
+  // 🔥 DEBUG IMPORTANT ICI
+  console.log("🎬 FFmpeg utilisé pour cette requête :", ffmpegPath);
 
   execFile(ffmpegPath, [
     "-i", inputPath,
     "-ss", `00:00:${String(time).padStart(2, "0")}`,
     "-vframes", "1",
-    "-y", // overwrite
+    "-y",
     outputPath
   ], (err, stdout, stderr) => {
 
@@ -130,6 +141,7 @@ app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
       console.error("❌ ERREUR FFMPEG:");
       console.error(err);
       console.error(stderr);
+
       return res.status(500).json({
         error: "Erreur génération thumbnail",
         details: stderr
@@ -195,5 +207,5 @@ app.get("/test-ffmpeg", (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log("🚀 Server running on port", PORT);
 });
