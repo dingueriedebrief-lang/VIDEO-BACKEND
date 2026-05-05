@@ -21,17 +21,17 @@ app.use(cors({
 
 app.use(express.json());
 
-// 🔥 AJOUT IMPORTANT (SERVIR index.html)
+// servir frontend
 app.use(express.static(__dirname));
 
-// 🔥 IMPORTANT : rendre les thumbnails accessibles
+// servir thumbnails
 app.use("/thumbnails", express.static(path.join(__dirname, "thumbnails")));
 
 // upload config
 const upload = multer({ dest: "uploads/" });
 
-// chemins
-const ffmpegPath = "C:\\FFMPEG\\ffmpeg.exe";
+// 🔥 IMPORTANT: Render utilise Linux → ffmpeg doit être installé côté serveur
+const ffmpegPath = "ffmpeg";
 
 // =====================
 // TEST API
@@ -112,22 +112,25 @@ app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
 
   const time = req.body.time || "1";
 
-console.log("Temps reçu:", time);
+  console.log("Temps reçu:", time);
 
-execFile(ffmpegPath, [
-  "-i", inputPath,
-  "-ss", `00:00:${time.padStart(2, "0")}`,
-  "-vframes", "1",
-  outputPath
+  execFile(ffmpegPath, [
+    "-i", inputPath,
+    "-ss", `00:00:${time.padStart(2, "0")}`,
+    "-vframes", "1",
+    outputPath
   ], (err) => {
     if (err) {
       console.error(err);
       return res.status(500).send("Erreur thumbnail");
     }
 
+    // 🔥 IMPORTANT : URL dynamique (Render)
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
     res.json({
       message: "Thumbnail généré",
-      thumbnail: `http://localhost:3000/thumbnails/${req.file.filename}.jpg`
+      thumbnail: `${baseUrl}/thumbnails/${req.file.filename}.jpg`
     });
   });
 });
@@ -179,7 +182,7 @@ app.get("/test-ffmpeg", (req, res) => {
 // =====================
 // START SERVER
 // =====================
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
