@@ -1,85 +1,106 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Video App</title>
+  <meta charset="UTF-8">
+  <title>Thumbnail Generator</title>
+
+  <style>
+    body {
+      background:#111;
+      color:white;
+      text-align:center;
+      font-family:sans-serif;
+    }
+
+    .box {
+      margin-top: 50px;
+    }
+
+    input, button {
+      padding:10px;
+      margin:10px;
+      border-radius:8px;
+      border:none;
+    }
+
+    button {
+      background:#00c896;
+      color:white;
+      cursor:pointer;
+    }
+
+    button:hover {
+      background:#00a87a;
+    }
+
+    img {
+      margin-top:20px;
+      border-radius:10px;
+      max-width:80%;
+    }
+  </style>
 </head>
+
 <body>
 
-  <h2>Importer une vidéo YouTube 🎥</h2>
+<div class="box">
 
-  <input type="text" id="youtubeLink" placeholder="Colle le lien YouTube ici" />
-  <button onclick="analyzeVideo()">Analyser</button>
+<h1>🎬 Générateur de Thumbnail PRO</h1>
 
-  <hr>
+<input type="file" id="videoInput"><br>
 
-  <h2>Uploader une vidéo 🎥</h2>
+⏱ Temps (en secondes) :
+<input type="number" id="timeInput" value="1"><br>
 
-  <input type="file" id="videoInput" />
-  <br><br>
-  <button onclick="uploadVideo()">Envoyer</button>
+<button id="btn">Générer Thumbnail</button>
 
-  <p id="status"></p>
+<div id="result"></div>
 
-  <script>
-    // 🎯 ANALYSE YOUTUBE
-    async function analyzeVideo() {
-      const input = document.getElementById("youtubeLink").value;
+</div>
 
-      console.log("Analyse du lien :", input);
+<script>
 
-      try {
-        const res = await fetch("https://video-backend-production-07ad.up.railway.app/analyze", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ url: input })
-        });
+document.getElementById("btn").addEventListener("click", async function () {
 
-        const data = await res.json();
+  const fileInput = document.getElementById("videoInput");
+  const resultDiv = document.getElementById("result");
+  const time = document.getElementById("timeInput").value;
 
-        console.log("Réponse :", data);
+  if (fileInput.files.length === 0) {
+    alert("Choisis une vidéo !");
+    return;
+  }
 
-        alert(data.message);
+  const formData = new FormData();
+  formData.append("video", fileInput.files[0]);
+  formData.append("time", time);
 
-      } catch (err) {
-        console.error(err);
-        alert("Erreur analyse");
-      }
-    }
+  // 🔥 loader
+  resultDiv.innerHTML = "⏳ Génération en cours...";
 
-    // 🎥 UPLOAD VIDEO
-    async function uploadVideo() {
-      const fileInput = document.getElementById("videoInput");
-      const status = document.getElementById("status");
+  try {
+    const response = await fetch("/thumbnail-upload", {
+      method: "POST",
+      body: formData
+    });
 
-      const file = fileInput.files[0];
+    const data = await response.json();
 
-      if (!file) {
-        status.innerText = "❌ Choisis un fichier";
-        return;
-      }
+   resultDiv.innerHTML =
+  "<p>Thumbnail généré :</p>" +
+  "<img src='" + data.thumbnail + "'>" +
+  "<br><br>" +
+  "<a href='" + data.thumbnail + "' download>" +
+  "<button>📥 Télécharger</button></a>";
 
-      const formData = new FormData();
-      formData.append("video", file);
+  } catch (error) {
+    console.error(error);
+    resultDiv.innerHTML = "Erreur 😢";
+  }
 
-      try {
-        const res = await fetch("https://video-backend-production-07ad.up.railway.app/upload", {
-          method: "POST",
-          body: formData
-        });
+});
 
-        const text = await res.text();
-
-        status.innerText = "✅ " + text;
-
-      } catch (err) {
-        console.error(err);
-        status.innerText = "❌ Erreur upload";
-      }
-    }
-  </script>
+</script>
 
 </body>
 </html>
