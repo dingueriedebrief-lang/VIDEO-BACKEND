@@ -14,8 +14,20 @@ const app = express();
 // =====================
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-// 🔥 FFmpeg Linux (Render FIX FINAL)
-const ffmpegPath = "/usr/bin/ffmpeg";
+// 🔥 FFmpeg FIX FINAL (100% Render compatible)
+let ffmpegPath;
+
+try {
+  ffmpegPath = require("ffmpeg-static");
+} catch (e) {
+  console.error("❌ ffmpeg-static non trouvé");
+}
+
+// 🔥 Sécurité anti Windows
+if (!ffmpegPath || ffmpegPath.includes("C:\\")) {
+  console.log("⚠️ fallback ffmpeg Linux");
+  ffmpegPath = "/usr/bin/ffmpeg";
+}
 
 // 🔥 DEBUG
 console.log("🚀 FFmpeg utilisé :", ffmpegPath);
@@ -31,7 +43,7 @@ app.use(express.json());
 // servir frontend
 app.use(express.static(__dirname));
 
-// créer dossier thumbnails si inexistant
+// créer dossier thumbnails
 const thumbnailsDir = path.join(__dirname, "thumbnails");
 if (!fs.existsSync(thumbnailsDir)) {
   fs.mkdirSync(thumbnailsDir);
@@ -40,7 +52,7 @@ if (!fs.existsSync(thumbnailsDir)) {
 // servir thumbnails
 app.use("/thumbnails", express.static(thumbnailsDir));
 
-// upload config
+// upload
 const upload = multer({ dest: "uploads/" });
 
 // =====================
@@ -51,7 +63,7 @@ app.get("/", (req, res) => {
 });
 
 // =====================
-// THUMBNAIL UPLOAD VIDEO
+// THUMBNAIL
 // =====================
 app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
 
@@ -66,8 +78,8 @@ app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
   if (time < 1) time = 1;
   if (time > 59) time = 59;
 
-  console.log("⏱️ Temps reçu:", time);
-  console.log("🎬 FFmpeg utilisé :", ffmpegPath);
+  console.log("⏱️ Temps:", time);
+  console.log("🎬 FFmpeg:", ffmpegPath);
 
   execFile(ffmpegPath, [
     "-i", inputPath,
@@ -78,7 +90,7 @@ app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
   ], (err, stdout, stderr) => {
 
     if (err) {
-      console.error("❌ ERREUR FFMPEG:");
+      console.error("❌ FFMPEG ERROR:");
       console.error(err);
       console.error(stderr);
 
@@ -103,7 +115,7 @@ app.post("/thumbnail-upload", upload.single("video"), (req, res) => {
 app.get("/test-ffmpeg", (req, res) => {
   execFile(ffmpegPath, ["-version"], (error, stdout, stderr) => {
     if (error) {
-      console.error("❌ Test FFmpeg erreur :", error);
+      console.error("❌ Test FFmpeg:", error);
       console.error(stderr);
       return res.send("FFmpeg erreur ❌");
     }
@@ -111,8 +123,6 @@ app.get("/test-ffmpeg", (req, res) => {
   });
 });
 
-// =====================
-// START SERVER
 // =====================
 const PORT = process.env.PORT || 3000;
 
