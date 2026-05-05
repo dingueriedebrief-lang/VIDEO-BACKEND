@@ -14,19 +14,25 @@ const app = express();
 // =====================
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-// 🔥 FFmpeg FIX FINAL (100% Render compatible)
+// ✅ FFmpeg (solution propre Render)
 let ffmpegPath;
 
 try {
   ffmpegPath = require("ffmpeg-static");
 } catch (e) {
-  console.error("❌ ffmpeg-static non trouvé");
+  console.error("❌ ffmpeg-static non trouvé !");
 }
 
-// 🔥 Sécurité anti Windows
-if (!ffmpegPath || ffmpegPath.includes("C:\\")) {
-  console.log("⚠️ fallback ffmpeg Linux");
-  ffmpegPath = "/usr/bin/ffmpeg";
+// ❌ STOP si FFmpeg introuvable
+if (!ffmpegPath) {
+  throw new Error("FFmpeg introuvable. Vérifie ffmpeg-static.");
+}
+
+// 🔥 FIX IMPORTANT : permissions Linux (Render)
+try {
+  fs.chmodSync(ffmpegPath, 0o755);
+} catch (e) {
+  console.log("⚠️ chmod non nécessaire ou déjà appliqué");
 }
 
 // 🔥 DEBUG
