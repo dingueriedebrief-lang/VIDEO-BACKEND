@@ -31,7 +31,7 @@ app.use("/thumbnails", express.static(path.join(__dirname, "thumbnails")));
 const upload = multer({ dest: "uploads/" });
 
 // 🔥 IMPORTANT: Render utilise Linux → ffmpeg doit être installé côté serveur
-const ffmpegPath = "ffmpeg";
+const ffmpegPath = require("ffmpeg-static");
 
 // =====================
 // TEST API
