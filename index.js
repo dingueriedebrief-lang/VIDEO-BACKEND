@@ -46,44 +46,28 @@ app.get("/", (req, res) => {
 // =====================
 app.post("/thumbnail-upload", upload.single("video"), async (req, res) => {
   try {
+
     if (!req.file) {
-      return res.status(400).json({ error: "Aucune vidéo envoyée" });
+      return res.status(400).json({ error: "Aucun fichier uploadé" });
     }
 
-    console.log("📁 File:", req.file);
+    const publicId = req.file.filename; // Cloudinary ID
 
-    const videoUrl = req.file.path;
-    const publicId = req.file.filename; // ⚠️ important
-
-    // 🔥 Génération thumbnail Cloudinary
     const thumbnail = cloudinary.url(publicId, {
       resource_type: "video",
       format: "jpg",
-      secure: true,
       transformation: [
         { width: 480, height: 270, crop: "fill" }
       ]
     });
 
     res.json({
-      message: "Upload + thumbnail OK",
-      video: videoUrl,
+      message: "Thumbnail OK",
       thumbnail: thumbnail
     });
 
   } catch (error) {
-    console.error("❌ ERREUR CLOUDINARY:", error);
-
-    res.status(500).json({
-      error: "Erreur Cloudinary",
-      details: error.message
-    });
+    console.error("ERREUR BACK:", error);
+    res.status(500).json({ error: error.message });
   }
-});
-
-// =====================
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("🚀 Server running on port", PORT);
 });
