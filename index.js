@@ -11,57 +11,54 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-/* =========================
-   CLOUDINARY CONFIG
-========================= */
+/* CLOUDINARY CONFIG */
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-/* =========================
-   STORAGE CONFIG
-========================= */
+/* STORAGE */
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: async (req, file) => {
-    return {
-      folder: "videos",
-      resource_type: "video"
-    };
-  }
+  params: async (req, file) => ({
+    folder: "videos",
+    resource_type: "video",
+    allowed_formats: ["mp4", "mov", "avi", "mkv"]
+  })
 });
 
 const upload = multer({ storage });
 
-/* =========================
-   TEST ROUTE
-========================= */
+/* TEST ROUTE */
 app.get("/", (req, res) => {
-  res.send("🔥 API Cloudinary OK");
+  res.json({
+    success: true,
+    message: "API WORKING"
+  });
 });
 
-/* =========================
-   THUMBNAIL ROUTE
-========================= */
+/* THUMBNAIL ROUTE */
 app.post("/thumbnail-upload", upload.single("video"), async (req, res) => {
+
   try {
-    console.log("Fichier reçu :", req.file); // Vérifie le fichier reçu
+
+    console.log("FILE:");
+    console.log(req.file);
+
     if (!req.file) {
-      throw new Error("Aucun fichier reçu");
+      return res.status(400).json({
+        success: false,
+        error: "No video uploaded"
+      });
     }
 
-    // URL vidéo
     const videoUrl = req.file.path;
 
-    // PUBLIC ID
     const publicId = req.file.filename;
 
-    // Génération thumbnail
-    const thumbnailUrl = cloudinary.url(publicId, {
+    const thumbnailUrl = cloudinary.url(publicId + ".jpg", {
       resource_type: "video",
-      format: "jpg",
       transformation: [
         {
           width: 480,
@@ -71,18 +68,24 @@ app.post("/thumbnail-upload", upload.single("video"), async (req, res) => {
       ]
     });
 
-    res.json({
+    return res.json({
       success: true,
       video: videoUrl,
       thumbnail: thumbnailUrl
     });
 
   } catch (error) {
-    console.error("ERREUR CLOUDINARY:", error); // Log détaillé
-    res.status(500).json({
+
+    console.log("FULL ERROR:");
+    console.log(error);
+
+    return res.status(500).json({
       success: false,
-      error: error.message,
-      stack: error.stack // Optionnel, pour voir la stack si besoin
+      error: error.message
     });
   }
+
 });
+
+/* IMPORTANT FOR VERCEL */
+module.exports = app;
