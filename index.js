@@ -46,28 +46,17 @@ app.get("/", (req, res) => {
    THUMBNAIL ROUTE
 ========================= */
 app.post("/thumbnail-upload", upload.single("video"), async (req, res) => {
-
   try {
-
-    console.log("======= FICHIER UPLOAD =======");
-    console.log(req.file);
-
+    console.log("Fichier reçu :", req.file); // Vérifie le fichier reçu
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        error: "Aucune vidéo reçue"
-      });
+      throw new Error("Aucun fichier reçu");
     }
 
-    // URL de la vidéo
+    // URL vidéo
     const videoUrl = req.file.path;
 
-    // PUBLIC ID CLOUDINARY
-    // IMPORTANT :
-    // utiliser public_id et PAS filename
-    const publicId = req.file.public_id;
-
-    console.log("PUBLIC ID :", publicId);
+    // PUBLIC ID
+    const publicId = req.file.filename;
 
     // Génération thumbnail
     const thumbnailUrl = cloudinary.url(publicId, {
@@ -77,39 +66,23 @@ app.post("/thumbnail-upload", upload.single("video"), async (req, res) => {
         {
           width: 480,
           height: 270,
-          crop: "fill",
-          quality: "auto"
+          crop: "fill"
         }
       ]
     });
 
-    console.log("THUMBNAIL :", thumbnailUrl);
-
-    return res.json({
+    res.json({
       success: true,
       video: videoUrl,
       thumbnail: thumbnailUrl
     });
 
   } catch (error) {
-
-    console.log("======= ERREUR COMPLETE =======");
-    console.log(error);
-
-    return res.status(500).json({
+    console.error("ERREUR CLOUDINARY:", error); // Log détaillé
+    res.status(500).json({
       success: false,
       error: error.message,
-      details: error
+      stack: error.stack // Optionnel, pour voir la stack si besoin
     });
   }
-
-});
-
-/* =========================
-   START SERVER
-========================= */
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("🚀 Server running on port", PORT);
 });
