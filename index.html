@@ -75,27 +75,38 @@ document.getElementById("btn").addEventListener("click", async function () {
   formData.append("video", fileInput.files[0]);
   formData.append("time", time);
 
-  // 🔥 loader
+  // loader
   resultDiv.innerHTML = "⏳ Génération en cours...";
 
   try {
-    const response = await fetch("/thumbnail-upload", {
+
+    const response = await fetch("https://video-backend-6xay.onrender.com/thumbnail-upload", {
       method: "POST",
       body: formData
     });
 
+    // 🔥 vérifie si erreur serveur
+    if (!response.ok) {
+      throw new Error("Erreur serveur");
+    }
+
     const data = await response.json();
 
-   resultDiv.innerHTML =
-  "<p>Thumbnail généré :</p>" +
-  "<img src='" + data.thumbnail + "'>" +
-  "<br><br>" +
-  "<a href='" + data.thumbnail + "' download>" +
-  "<button>📥 Télécharger</button></a>";
+    // 🔥 vérifie si thumbnail existe
+    if (!data.thumbnail) {
+      throw new Error("Thumbnail non reçu");
+    }
+
+    resultDiv.innerHTML =
+      "<p>Thumbnail généré :</p>" +
+      "<img src='" + data.thumbnail + "'>" +
+      "<br><br>" +
+      "<a href='" + data.thumbnail + "' download>" +
+      "<button>📥 Télécharger</button></a>";
 
   } catch (error) {
-    console.error(error);
-    resultDiv.innerHTML = "Erreur 😢";
+    console.error("Erreur complète :", error);
+    resultDiv.innerHTML = "❌ Erreur lors de la génération";
   }
 
 });
