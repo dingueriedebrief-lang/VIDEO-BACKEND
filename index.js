@@ -11,41 +11,63 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-/* CONFIG CLOUDINARY */
+/* =========================
+   CLOUDINARY CONFIG
+========================= */
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-/* STORAGE */
+/* =========================
+   STORAGE CONFIG
+========================= */
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: async (req, file) => ({
-    folder: "videos",
-    resource_type: "video"
-  })
+  params: async (req, file) => {
+    return {
+      folder: "videos",
+      resource_type: "video"
+    };
+  }
 });
 
 const upload = multer({ storage });
 
-/* TEST */
+/* =========================
+   TEST ROUTE
+========================= */
 app.get("/", (req, res) => {
   res.send("🔥 API Cloudinary OK");
 });
 
-/* THUMBNAIL */
+/* =========================
+   THUMBNAIL ROUTE
+========================= */
 app.post("/thumbnail-upload", upload.single("video"), async (req, res) => {
 
   try {
 
+    console.log("======= FICHIER UPLOAD =======");
     console.log(req.file);
 
-    // URL vidéo
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: "Aucune vidéo reçue"
+      });
+    }
+
+    // URL de la vidéo
     const videoUrl = req.file.path;
 
-    // PUBLIC ID
-    const publicId = req.file.filename;
+    // PUBLIC ID CLOUDINARY
+    // IMPORTANT :
+    // utiliser public_id et PAS filename
+    const publicId = req.file.public_id;
+
+    console.log("PUBLIC ID :", publicId);
 
     // Génération thumbnail
     const thumbnailUrl = cloudinary.url(publicId, {
@@ -55,12 +77,15 @@ app.post("/thumbnail-upload", upload.single("video"), async (req, res) => {
         {
           width: 480,
           height: 270,
-          crop: "fill"
+          crop: "fill",
+          quality: "auto"
         }
       ]
     });
 
-    res.json({
+    console.log("THUMBNAIL :", thumbnailUrl);
+
+    return res.json({
       success: true,
       video: videoUrl,
       thumbnail: thumbnailUrl
@@ -68,19 +93,23 @@ app.post("/thumbnail-upload", upload.single("video"), async (req, res) => {
 
   } catch (error) {
 
-    console.log("ERREUR CLOUDINARY:");
+    console.log("======= ERREUR COMPLETE =======");
     console.log(error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
+      details: error
     });
   }
 
 });
 
+/* =========================
+   START SERVER
+========================= */
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log("🚀 Server running on port", PORT);
 });
