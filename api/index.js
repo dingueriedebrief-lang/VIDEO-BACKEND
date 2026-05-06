@@ -89,3 +89,7 @@ app.post("/thumbnail-upload", upload.single("video"), async (req, res) => {
 
 /* IMPORTANT FOR VERCEL */
 module.exports = app;
+
+app.listen(3000, () => {
+  console.log("SERVER RUNNING ON PORT 3000");
+});
