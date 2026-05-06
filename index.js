@@ -51,7 +51,7 @@ app.post("/thumbnail-upload", upload.single("video"), async (req, res) => {
       return res.status(400).json({ error: "Aucun fichier uploadé" });
     }
 
-    const publicId = req.file.filename; // Cloudinary ID
+    const publicId = req.file.public_id;
 
     const thumbnail = cloudinary.url(publicId, {
       resource_type: "video",
